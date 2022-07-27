@@ -23,18 +23,18 @@ function onSubmit(e){
             amount : amountInput.value,
             description : descriptionInput.value,
             category : categoryInput.value,
-            id : Date.now()
+            // id : Date.now()
         };
 
               //console.log(userDetails);
            
-        if (expenseArr == null) expenseArr =[];
-            expenseArr.push(expenseDetails); 
-              //console.log(userArr);
-
-        localStorage.setItem('allExpenses', JSON.stringify(expenseArr));
-
-        displayDetails();
+        axios
+            .post("https://crudcrud.com/api/c91e30a8c8384064806758874bc248bd/expenseData", expenseDetails)
+            .then((res) => {
+                console.log('response data: ', res.data);
+                displayDetails();
+            })
+            .catch((err) => console.log(err));
 
         amountInput.value = '';
         descriptionInput.value = '';
@@ -51,65 +51,68 @@ function onSubmit(e){
 //           }
 // }
 
-window.addEventListener('load', displayDetails);
+window.addEventListener('DOMContentLoaded', displayDetails);
         
-function displayDetails(){
-        expenseList.innerHTML = '';
+async function displayDetails(){
+    expenseList.innerHTML = '';
 
-        let temp = JSON.parse(localStorage.getItem('allExpenses'));
-        expenseArr = temp;
-        console.log(temp);
+    let temp = await axios.get("https://crudcrud.com/api/c91e30a8c8384064806758874bc248bd/expenseData");
+
+    temp.data ? temp.data.forEach((element) => {
+        const li = document.createElement('li');
+            
+        li.appendChild(document.createTextNode(`amount: ${element.amount}, description: ${element.description}, category: ${element.category}`));
+        li.setAttribute('id', element._id);
 
             
-        temp ? temp.forEach((element) => {
-            const li = document.createElement('li');
-                
-            li.appendChild(document.createTextNode(`amount: ${element.amount}, description: ${element.description}, category: ${element.category}`));
-            li.setAttribute('id', element.id);
+        let deleteBtn = document.createElement('button');
+        let editBtn = document.createElement('button');
 
-                
-            let deleteBtn = document.createElement('button');
-            let editBtn = document.createElement('button');
+        deleteBtn.appendChild(document.createTextNode('Delete'));
+        editBtn.appendChild(document.createTextNode('Edit'));
 
-            deleteBtn.appendChild(document.createTextNode('Delete'));
-            editBtn.appendChild(document.createTextNode('Edit'));
+        li.appendChild(deleteBtn);
+        li.appendChild(editBtn);
 
-            li.appendChild(deleteBtn);
-            li.appendChild(editBtn);
-    
-            deleteBtn.addEventListener('click', () => deleteFunction(element.id));
-            editBtn.addEventListener('click', () => editFunction(element.id));
+        deleteBtn.addEventListener('click', () => deleteFunction(deleteBtn.parentElement.id));
+        editBtn.addEventListener('click', () => editFunction(editBtn.parentElement.id));
 
-            expenseList.appendChild(li);
-        }) : '' ;
+        expenseList.appendChild(li);
+    }) : '' ;
 }
 
-function editFunction(id){
+async function editFunction(id){
           // console.log(id);
-    let toEdit = expenseArr.filter(element => element.id == id);
+    let toEditURL = `https://crudcrud.com/api/c91e30a8c8384064806758874bc248bd/expenseData/${id}`;
           //console.log(toEdit);
           
-    let newAmount = toEdit[0].amount;
-    let newDescription = toEdit[0].description;
-    let newCategory = toEdit[0].category;
+    let newAmount;
+    let newDescription;
+    let newCategory;
+    let res = await axios.get(`${toEditURL}`);
 
-          // console.log(newName);
-          // console.log(newEmail);
-          // console.log(userArr);
-    let newArr = expenseArr.filter(element => element.id != id);
-          //console.log(newArr);
-    localStorage.setItem('allExpenses', JSON.stringify(newArr));
-    displayDetails();
+    newAmount = res.data.amount;
+    newDescription = res.data.description;
+    newCategory = res.data.category;
 
-    amountInput.value = newAmount;
-    descriptionInput.value = newDescription;
-    categoryInput.value = newCategory;
+    axios.delete(`${toEditURL}`)
+        .then(() => {
+            displayDetails();
+
+            amountInput.value = newAmount;
+            descriptionInput.value = newDescription;
+            categoryInput.value = newCategory;
+        })
+        .catch(err => console.log(err));
 }
 
 function deleteFunction(id){
-          //console.log(id);
-    let newArr = expenseArr.filter(element => element.id != id);
-          //console.log(newArr);
-    localStorage.setItem('allExpenses', JSON.stringify(newArr));
-    displayDetails();
+    let toDeleteURL = `https://crudcrud.com/api/c91e30a8c8384064806758874bc248bd/expenseData/${id}`;
+    //console.log(toDeleteURL);
+
+    axios.delete(`${toDeleteURL}`)
+        .then(() => {
+            displayDetails();
+        })
+        .catch(err => console.log(err));
 }
